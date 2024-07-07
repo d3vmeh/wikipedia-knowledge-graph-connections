@@ -110,7 +110,11 @@ os.environ["AURA_INSTANCENAME"] = AURA_INSTANCENAME
 def load_documents(query = "George Washington", num_docs = None):
 
     print("Loading documents from Wikipedia")
-    raw_documents = WikipediaLoader(query = query).load()
+    raw_documents1 = WikipediaLoader(query = "Alexander Hamilton").load()
+    raw_documents2 = WikipediaLoader(query = "Thomas Jefferson").load()
+
+    raw_documents = raw_documents1 + raw_documents2
+
     print('Documents Loaded')
     print(type(raw_documents))
     #Need to split the document into chunks
@@ -119,6 +123,8 @@ def load_documents(query = "George Washington", num_docs = None):
     if num_docs is not None:
         raw_documents = raw_documents[:num_docs]
     documents = text_splitter.split_documents(raw_documents) #only collecting the first three documents
+
+    print(len(documents))
     print("Documents Split")
     return documents
 
@@ -161,7 +167,7 @@ def create_vector_index():
     global vector_index2
     vector_index2 = Neo4jVector.from_existing_graph(
         OpenAIEmbeddings(),
-        search_type="hybrid",
+        search_type="vector",
         node_label="Document",
         text_node_properties=["text"],
         embedding_node_property="embedding",
@@ -242,6 +248,24 @@ def create_graph(graph, documents):
         | StrOutputParser()
     )
     return chain
+
+
+
+
+def export_graph_to_csv(cypher_query, file_path):
+    """
+    Export Neo4j graph data to a CSV file using APOC.
+
+    Parameters:
+    cypher_query (str): The Cypher query to select the data to export.
+    file_path (str): The path to the CSV file where the data will be exported.
+    """
+    export_query = f"CALL apoc.export.csv.query(\"{cypher_query}\", \"{file_path}\", {{}})"
+    with graph.session() as session:
+        session.run(export_query)
+        print(f"Data exported to {file_path}")
+
+
 
 #breakpoint()
 #try:
